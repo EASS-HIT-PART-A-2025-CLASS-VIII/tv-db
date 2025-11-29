@@ -1,0 +1,41 @@
+# FastAPI TV Series Catalogue (EX1)
+
+Small FastAPI service for a TV series catalogue using SQLModel + SQLite. Includes Typer CLI helpers, CRUD API, and pytest coverage.
+
+## Requirements
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv)
+
+## Setup
+```bash
+cd fastapi-movies
+uv venv .venv
+source .venv/bin/activate
+uv sync --all-groups
+```
+
+## Run the API locally
+```bash
+uv run uvicorn app.main:app --reload
+```
+The lifespan handler initializes the SQLite database file on startup, so no manual migration step is needed for development.
+The API exposes:
+- `GET /series` — list series
+- `POST /series` — create a series entry
+- `DELETE /series/{id}` — delete a series entry
+- `GET /movies` — list movies
+- `POST /movies` — create a movie entry
+- `GET /movies/{id}` — fetch a single movie by id
+
+## Typer CLI
+Initialize or seed the database (no `.db` files are checked in):
+```bash
+uv run python -m app.cli init-db
+uv run python -m app.cli seed  # adds 3 sample TV series
+```
+
+## Tests
+```bash
+uv run pytest
+```
+Tests use an in-memory SQLite engine and FastAPI's `TestClient` to cover happy-path list/create/update/delete flows.

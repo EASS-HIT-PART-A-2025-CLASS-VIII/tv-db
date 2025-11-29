@@ -1,0 +1,18 @@
+[project]
+name = "fastapi-tv-series"
+version = "0.1.0"
+description = "FastAPI TV series catalogue with SQLModel + SQLite"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "sqlmodel",
+    "uvicorn",
+    "typer",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "httpx",
+]
