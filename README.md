@@ -38,4 +38,9 @@ uv run python -m app.cli seed  # adds 3 sample TV series
 ```bash
 uv run pytest
 ```
-Tests use an in-memory SQLite engine and FastAPI's `TestClient` to cover happy-path list/create/update/delete flows.
+## AI Assistance
+This project was developed with assistance from Codex for:
+- Linting
+- Edge cases
+- Documentation
+- Test design
