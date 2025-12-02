@@ -1,0 +1,7 @@
+services:
+  api:
+    build: .
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./series.db:/app/series.db

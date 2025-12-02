@@ -38,9 +38,17 @@ uv run python -m app.cli seed  # adds 3 sample TV series
 ```bash
 uv run pytest
 ```
+
+## Docker Compose
+```bash
+docker compose up --build
+```
+The compose file maps `series.db` from your workspace into the container so data persists across restarts. The API listens on port 9000.
+
 ## AI Assistance
 This project was developed with assistance from Codex for:
 - Linting
 - Edge cases
 - Documentation
 - Test design
+
