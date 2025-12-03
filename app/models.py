@@ -10,10 +10,17 @@ class SeriesBase(SQLModel):
     rating: Optional[float] = None
 
 
-class Series(SeriesBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+class Series(SeriesBase):
+    """Public model returned by the API."""
+
+    id: int
 
 
 class SeriesCreate(SeriesBase):
     pass
 
+
+class SeriesDB(SeriesBase, table=True):
+    """Database table model."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)

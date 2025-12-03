@@ -3,7 +3,7 @@ import typer
 from sqlmodel import delete
 
 from .db import create_db_and_tables, session_context
-from .models import Series
+from .models import SeriesDB
 
 cli = typer.Typer(help="Utility commands for the TV Series Catalogue API")
 
@@ -30,11 +30,11 @@ def seed(clear_existing: bool = typer.Option(True, help="Wipe existing series be
 
     with session_context() as session:
         if clear_existing:
-            session.exec(delete(Series))
+            session.exec(delete(SeriesDB))
             session.commit()
 
         for data in _load_seed_data():
-            session.add(Series(**data))
+            session.add(SeriesDB(**data))
         session.commit()
 
     typer.echo("Seed data inserted.")

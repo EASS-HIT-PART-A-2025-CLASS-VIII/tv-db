@@ -1,30 +1,35 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from ..models import Series, SeriesCreate
+from ..models import Series, SeriesCreate, SeriesDB
+from ..services.series import find_duplicate_series
 
 
 def list_series(session: Session) -> list[Series]:
-    return session.exec(select(Series)).all()
+    rows = session.exec(select(SeriesDB)).all()
+    return [Series.model_validate(row) for row in rows]
 
 
 def create_series(series: SeriesCreate, session: Session) -> Series:
-    db_series = Series.model_validate(series)
+    if existing := find_duplicate_series(series, session):
+        return Series.model_validate(existing)
+
+    db_series = SeriesDB.model_validate(series)
     session.add(db_series)
     session.commit()
     session.refresh(db_series)
-    return db_series
+    return Series.model_validate(db_series)
 
 
 def get_series(series_id: int, session: Session) -> Series:
-    series = session.get(Series, series_id)
+    series = session.get(SeriesDB, series_id)
     if series is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Series not found")
-    return series
+    return Series.model_validate(series)
 
 
 def delete_series(series_id: int, session: Session) -> None:
-    series = session.get(Series, series_id)
+    series = session.get(SeriesDB, series_id)
     if series is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Series not found")
 

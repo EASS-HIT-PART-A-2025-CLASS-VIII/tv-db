@@ -38,3 +38,17 @@ def test_delete_series(client: TestClient):
     list_response = client.get("/series")
     assert list_response.status_code == 200
     assert list_response.json() == []
+
+
+def test_create_series_returns_existing_on_duplicate_payload(client: TestClient):
+    payload = {"title": "The Bear", "creator": "Christopher Storer", "year": 2022, "rating": 8.6}
+    first = client.post("/series", json=payload)
+    assert first.status_code == 201
+    first_body = first.json()
+
+    second = client.post("/series", json=payload)
+    assert second.status_code == 201
+    second_body = second.json()
+
+    assert first_body["id"] == second_body["id"]
+    assert second_body["title"] == payload["title"]
