@@ -3,7 +3,8 @@ import typer
 from sqlmodel import delete
 
 from .db import create_db_and_tables, session_context
-from .models import SeriesDB
+from .models import SeriesCreate, SeriesDB
+from .services.series import find_duplicate_series
 
 cli = typer.Typer(help="Utility commands for the TV Series Catalogue API")
 
@@ -34,6 +35,9 @@ def seed(clear_existing: bool = typer.Option(True, help="Wipe existing series be
             session.commit()
 
         for data in _load_seed_data():
+            series_payload = SeriesCreate(**data)
+            if find_duplicate_series(series_payload, session):
+                continue
             session.add(SeriesDB(**data))
         session.commit()
 

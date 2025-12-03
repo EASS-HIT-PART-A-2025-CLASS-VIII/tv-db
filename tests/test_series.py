@@ -52,3 +52,15 @@ def test_create_series_returns_existing_on_duplicate_payload(client: TestClient)
 
     assert first_body["id"] == second_body["id"]
     assert second_body["title"] == payload["title"]
+
+
+def test_create_series_rejects_empty_title(client: TestClient):
+    payload = {"title": "", "creator": "Somebody", "year": 2022, "rating": 7.0}
+    response = client.post("/series", json=payload)
+    assert response.status_code == 422
+
+
+def test_create_series_rejects_rating_out_of_range(client: TestClient):
+    payload = {"title": "Show", "creator": "Author", "year": 2022, "rating": 11}
+    response = client.post("/series", json=payload)
+    assert response.status_code == 422

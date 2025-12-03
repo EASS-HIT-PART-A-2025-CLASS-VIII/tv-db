@@ -4,10 +4,10 @@ from sqlmodel import Field, SQLModel
 
 
 class SeriesBase(SQLModel):
-    title: str
-    creator: str
-    year: int
-    rating: Optional[float] = None
+    title: str = Field(min_length=1)
+    creator: str = Field(min_length=1)
+    year: int = Field(ge=1900, le=2100)
+    rating: Optional[float] = Field(default=None, ge=0, le=10)
 
 
 class Series(SeriesBase):

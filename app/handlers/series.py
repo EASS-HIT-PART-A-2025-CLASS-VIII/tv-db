@@ -6,7 +6,7 @@ from ..services.series import find_duplicate_series
 
 
 def list_series(session: Session) -> list[Series]:
-    rows = session.exec(select(SeriesDB)).all()
+    rows = session.exec(select(SeriesDB).order_by(SeriesDB.id)).all()
     return [Series.model_validate(row) for row in rows]
 
 
