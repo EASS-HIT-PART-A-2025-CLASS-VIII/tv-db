@@ -8,7 +8,7 @@ Small FastAPI service for a TV series catalogue using SQLModel + SQLite. Include
 
 ## Setup
 ```bash
-cd fastapi-movies
+cd tv-db
 uv venv .venv
 source .venv/bin/activate
 uv sync --all-groups
@@ -23,9 +23,6 @@ The API exposes:
 - `GET /series` — list series
 - `POST /series` — create a series entry
 - `DELETE /series/{id}` — delete a series entry
-- `GET /movies` — list movies
-- `POST /movies` — create a movie entry
-- `GET /movies/{id}` — fetch a single movie by id
 
 ## Typer CLI
 Initialize or seed the database (no `.db` files are checked in):
@@ -51,4 +48,3 @@ This project was developed with assistance from Codex for:
 - Edge cases
 - Documentation
 - Test design
-

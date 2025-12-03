@@ -17,17 +17,3 @@ class Series(SeriesBase, table=True):
 class SeriesCreate(SeriesBase):
     pass
 
-
-class MovieBase(SQLModel):
-    title: str
-    director: str
-    year: int
-    rating: Optional[float] = None
-
-
-class Movie(MovieBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-
-
-class MovieCreate(MovieBase):
-    pass
