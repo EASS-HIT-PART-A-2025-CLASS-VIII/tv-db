@@ -36,6 +36,11 @@ uv run python -m app.cli seed  # adds 3 sample TV series
 uv run pytest
 ```
 
+## Code style
+```bash
+uv run ruff format .
+```
+
 ## Docker Compose
 ```bash
 docker compose up --build

@@ -25,7 +25,9 @@ def init_db() -> None:
 
 
 @cli.command()
-def seed(clear_existing: bool = typer.Option(True, help="Wipe existing series before seeding.")) -> None:
+def seed(
+    clear_existing: bool = typer.Option(True, help="Wipe existing series before seeding."),
+) -> None:
     """Seed the database with a few sample TV series."""
     create_db_and_tables()
 
