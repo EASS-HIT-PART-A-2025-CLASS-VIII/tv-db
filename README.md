@@ -24,6 +24,22 @@ The API exposes:
 - `POST /series` — create a series entry
 - `DELETE /series/{id}` — delete a series entry
 
+## Streamlit UI
+Launch a simple dashboard that talks to the same API:
+```bash
+# Terminal 1: start the API (defaults to http://localhost:8000)
+uv run uvicorn app.main:app --reload
+
+# Terminal 2: start the Streamlit UI (points to the API above)
+TV_API_BASE=http://localhost:8000 uv run streamlit run streamlit_app.py --server.port 8501
+```
+What you get:
+- Current series table with total/average rating metrics.
+- Quick add form (title, creator, year, optional rating) that posts to `/series`.
+- Delete dropdown that calls `DELETE /series/{id}`.
+- CSV export button for the visible list.
+If you run the API on another host or port, set `TV_API_BASE` accordingly.
+
 ## Typer CLI
 Initialize or seed the database (no `.db` files are checked in):
 ```bash
