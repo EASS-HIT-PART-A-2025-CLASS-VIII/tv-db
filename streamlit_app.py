@@ -201,7 +201,7 @@ def render_table(series: list[dict[str, Any]]) -> None:
 
     st.dataframe(
         series,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_order=["id", "title", "creator", "year", "rating"],
     )

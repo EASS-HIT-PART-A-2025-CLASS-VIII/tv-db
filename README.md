@@ -64,7 +64,7 @@ uv run ruff format .
 ```bash
 docker compose up --build
 ```
-The compose file maps `series.db` from your workspace into the container so data persists across restarts. The API listens on port 8000 and the Streamlit UI on port 8501. Override `API_PORT`, `STREAMLIT_PORT`, or `DATABASE_URL` via environment variables if needed.
+The compose file maps `series.db` from your workspace into the container so data persists across restarts. The API listens on port 8000 and the Streamlit UI on port 8501. Override `API_PORT`, `STREAMLIT_PORT`, or `DATABASE_URL` via environment variables if needed. The container defaults `TV_API_BASE` to `http://127.0.0.1:${API_PORT}` unless you override it.
 
 ## AI Assistance
 This project was developed with assistance from Codex for:
