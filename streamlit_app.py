@@ -180,7 +180,7 @@ def render_create_form(api_base: str) -> None:
     with st.form("create-series", clear_on_submit=True):
         title = st.text_input("Title", placeholder="e.g., The Bear", max_chars=120)
         creator = st.text_input("Creator", placeholder="e.g., Christopher Storer", max_chars=120)
-        year = st.number_input("Year", min_value=1900, max_value=2100, value=2024, step=1)
+        year = st.number_input("Year", min_value=1900, max_value=2100, value=2026, step=1)
         rating_raw = st.text_input("Rating (0-10, optional)", placeholder="8.6")
 
         submitted = st.form_submit_button("Save series")
