@@ -10,7 +10,7 @@ cli = typer.Typer(help="Utility commands for the TV Series Catalogue API")
 
 
 def _load_seed_data() -> list[dict]:
-    # Compact sample dataset for quick smoke testing
+    """Return a compact dataset for quick smoke testing."""
     return [
         {"title": "Breaking Bad", "creator": "Vince Gilligan", "year": 2008, "rating": 9.5},
         {"title": "The Crown", "creator": "Peter Morgan", "year": 2016, "rating": 8.6},
@@ -20,6 +20,7 @@ def _load_seed_data() -> list[dict]:
 
 @cli.command()
 def init_db() -> None:
+    """Create database tables."""
     create_db_and_tables()
     typer.echo("Database ready.")
 

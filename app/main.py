@@ -8,6 +8,7 @@ from .routes.series import router as series_router
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    """Initialize application resources on startup."""
     # Initialize database tables at startup using lifespan to avoid deprecated events.
     create_db_and_tables()
     yield

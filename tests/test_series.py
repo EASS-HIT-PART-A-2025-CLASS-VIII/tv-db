@@ -28,6 +28,49 @@ def test_get_series_by_id(client: TestClient):
         assert fetched[key] == value
 
 
+def test_get_series_returns_404_for_missing_id(client: TestClient):
+    response = client.get("/series/999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Series not found"
+
+
+def test_put_series_updates_entry(client: TestClient):
+    payload = {"title": "Severance", "creator": "Dan Erickson", "year": 2022, "rating": 8.7}
+    created = client.post("/series", json=payload).json()
+
+    update = {"title": "Severance", "creator": "Dan Erickson", "year": 2025, "rating": 9.0}
+    response = client.put(f"/series/{created['id']}", json=update)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == created["id"]
+    assert body["year"] == update["year"]
+    assert body["rating"] == update["rating"]
+
+
+def test_put_series_returns_404_for_missing_id(client: TestClient):
+    payload = {"title": "Andor", "creator": "Tony Gilroy", "year": 2022, "rating": 8.4}
+    response = client.put("/series/999", json=payload)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Series not found"
+
+
+def test_patch_series_updates_entry(client: TestClient):
+    payload = {"title": "Blue Eye Samurai", "creator": "Michael Green", "year": 2023, "rating": 8.7}
+    created = client.post("/series", json=payload).json()
+
+    response = client.patch(f"/series/{created['id']}", json={"rating": 9.1})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == created["id"]
+    assert body["rating"] == 9.1
+
+
+def test_patch_series_returns_404_for_missing_id(client: TestClient):
+    response = client.patch("/series/999", json={"rating": 7.0})
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Series not found"
+
+
 def test_delete_series(client: TestClient):
     payload = {"title": "Dark", "creator": "Baran bo Odar", "year": 2017, "rating": 8.8}
     created = client.post("/series", json=payload).json()
@@ -38,6 +81,12 @@ def test_delete_series(client: TestClient):
     list_response = client.get("/series")
     assert list_response.status_code == 200
     assert list_response.json() == []
+
+
+def test_delete_series_returns_404_for_missing_id(client: TestClient):
+    response = client.delete("/series/999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Series not found"
 
 
 def test_create_series_returns_existing_on_duplicate_payload(client: TestClient):

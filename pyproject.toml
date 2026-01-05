@@ -5,19 +5,19 @@ description = "FastAPI TV series catalogue with SQLModel + SQLite"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi",
-    "requests",
-    "sqlmodel",
-    "streamlit",
-    "uvicorn",
-    "typer",
+    "fastapi==0.122.0",
+    "requests==2.32.5",
+    "sqlmodel==0.0.27",
+    "streamlit==1.52.2",
+    "uvicorn==0.38.0",
+    "typer==0.20.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest",
-    "httpx",
-    "ruff",
+    "pytest==9.0.1",
+    "httpx==0.28.1",
+    "ruff==0.14.7",
 ]
 
 [tool.ruff]

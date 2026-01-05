@@ -19,9 +19,12 @@ uv sync --all-groups
 uv run uvicorn app.main:app --reload
 ```
 The lifespan handler initializes the SQLite database file on startup, so no manual migration step is needed for development.
+To override the database location, set `DATABASE_URL` (defaults to `sqlite:///./series.db`).
 The API exposes:
 - `GET /series` — list series
 - `POST /series` — create a series entry
+- `PUT /series/{id}` — replace a series entry
+- `PATCH /series/{id}` — update a series entry
 - `DELETE /series/{id}` — delete a series entry
 
 ## Streamlit UI
@@ -61,7 +64,7 @@ uv run ruff format .
 ```bash
 docker compose up --build
 ```
-The compose file maps `series.db` from your workspace into the container so data persists across restarts. The API listens on port 9000.
+The compose file maps `series.db` from your workspace into the container so data persists across restarts. The API listens on port 8000 and the Streamlit UI on port 8501. Override `API_PORT`, `STREAMLIT_PORT`, or `DATABASE_URL` via environment variables if needed.
 
 ## AI Assistance
 This project was developed with assistance from Codex for:

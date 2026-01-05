@@ -88,12 +88,14 @@ def inject_imdb_theme() -> None:
 
 
 def _clean_base_url(raw_url: str) -> str:
+    """Normalize the API base URL input."""
     if not raw_url:
         return API_BASE_DEFAULT
     return raw_url.strip().rstrip("/") or API_BASE_DEFAULT
 
 
 def fetch_series(api_base: str) -> list[dict[str, Any]]:
+    """Fetch the list of series from the API."""
     try:
         response = requests.get(f"{api_base}/series", timeout=REQUEST_TIMEOUT)
     except requests.RequestException as exc:
@@ -109,6 +111,7 @@ def fetch_series(api_base: str) -> list[dict[str, Any]]:
 
 
 def create_series(api_base: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Create a new series via the API."""
     try:
         response = requests.post(f"{api_base}/series", json=payload, timeout=REQUEST_TIMEOUT)
     except requests.RequestException as exc:
@@ -123,6 +126,7 @@ def create_series(api_base: str, payload: dict[str, Any]) -> dict[str, Any] | No
 
 
 def delete_series(api_base: str, series_id: int) -> bool:
+    """Delete a series entry via the API."""
     try:
         response = requests.delete(f"{api_base}/series/{series_id}", timeout=REQUEST_TIMEOUT)
     except requests.RequestException as exc:
@@ -136,7 +140,46 @@ def delete_series(api_base: str, series_id: int) -> bool:
     return True
 
 
+def update_series(api_base: str, series_id: int, payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Replace a series entry via the API."""
+    try:
+        response = requests.put(
+            f"{api_base}/series/{series_id}",
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        st.error(f"Could not reach the API: {exc}")
+        return None
+
+    if response.status_code != 200:
+        st.error(f"Update failed ({response.status_code}): {response.text}")
+        return None
+
+    return response.json()
+
+
+def patch_series(api_base: str, series_id: int, payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Partially update a series entry via the API."""
+    try:
+        response = requests.patch(
+            f"{api_base}/series/{series_id}",
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        st.error(f"Could not reach the API: {exc}")
+        return None
+
+    if response.status_code != 200:
+        st.error(f"Patch failed ({response.status_code}): {response.text}")
+        return None
+
+    return response.json()
+
+
 def render_metrics(series: list[dict[str, Any]]) -> None:
+    """Render summary metrics for the dataset."""
     ratings = [row["rating"] for row in series if row.get("rating") is not None]
     avg_rating = sum(ratings) / len(ratings) if ratings else None
     top_rated = max(series, key=lambda row: row.get("rating") or 0, default=None)
@@ -151,6 +194,7 @@ def render_metrics(series: list[dict[str, Any]]) -> None:
 
 
 def render_table(series: list[dict[str, Any]]) -> None:
+    """Render the main data table and export controls."""
     if not series:
         st.info("No series yet. Add your first entry to get started.")
         return
@@ -176,6 +220,7 @@ def render_table(series: list[dict[str, Any]]) -> None:
 
 
 def render_create_form(api_base: str) -> None:
+    """Render the form for creating new series entries."""
     st.subheader("Add a new series")
     with st.form("create-series", clear_on_submit=True):
         title = st.text_input("Title", placeholder="e.g., The Bear", max_chars=120)
@@ -210,21 +255,123 @@ def render_create_form(api_base: str) -> None:
 
 
 def render_delete_form(api_base: str, series: list[dict[str, Any]]) -> None:
+    """Render a delete control for existing entries."""
     st.subheader("Delete an entry")
     if not series:
         st.caption("No entries to delete yet.")
         return
 
-    options = {f"{row['title']} ({row['year']})": row["id"] for row in series}
-    label = st.selectbox("Pick a series to delete", list(options.keys()))
+    options = {row["id"]: row for row in series}
+    label = st.selectbox(
+        "Pick a series to delete",
+        sorted(options.keys()),
+        format_func=lambda series_id: (
+            f"#{series_id} · {options[series_id]['title']} ({options[series_id]['year']})"
+        ),
+        key="delete-series",
+    )
     if st.button("Delete selected", type="primary"):
-        series_id = options[label]
-        if delete_series(api_base, series_id):
-            st.success(f"Deleted: {label}")
+        if delete_series(api_base, label):
+            st.success(f"Deleted: #{label}")
             st.rerun()
 
 
+def render_update_forms(api_base: str, series: list[dict[str, Any]]) -> None:
+    """Render controls for updating existing entries."""
+    st.subheader("Update an entry")
+    if not series:
+        st.caption("No entries to update yet.")
+        return
+
+    options = {row["id"]: row for row in series}
+    label = st.selectbox(
+        "Pick a series to edit",
+        sorted(options.keys()),
+        format_func=lambda series_id: (
+            f"#{series_id} · {options[series_id]['title']} ({options[series_id]['year']})"
+        ),
+        key="edit-series",
+    )
+    selected = options[label]
+    st.caption(f"Editing ID #{selected['id']}")
+
+    with st.form("replace-series"):
+        st.markdown("Replace (PUT)")
+        title = st.text_input("Title", value=selected["title"], max_chars=120, key="put-title")
+        creator = st.text_input(
+            "Creator",
+            value=selected["creator"],
+            max_chars=120,
+            key="put-creator",
+        )
+        year = st.number_input(
+            "Year",
+            min_value=1900,
+            max_value=2100,
+            value=int(selected["year"]),
+            step=1,
+            key="put-year",
+        )
+        rating_raw = st.text_input(
+            "Rating (0-10, optional)",
+            value="" if selected.get("rating") is None else str(selected["rating"]),
+            key="put-rating",
+        )
+        submitted = st.form_submit_button("Replace series")
+        if submitted:
+            rating: float | None = None
+            if rating_raw:
+                try:
+                    rating = float(rating_raw)
+                except ValueError:
+                    st.error("Rating must be a number between 0 and 10.")
+                    return
+                if not 0 <= rating <= 10:
+                    st.error("Rating must be between 0 and 10.")
+                    return
+
+            if not title or not creator:
+                st.error("Title and creator are required.")
+                return
+
+            payload = {"title": title, "creator": creator, "year": int(year), "rating": rating}
+            updated = update_series(api_base, selected["id"], payload)
+            if updated:
+                st.success(f"Updated: {updated['title']} ({updated['year']})")
+                st.rerun()
+
+    with st.form("patch-series"):
+        st.markdown("Patch (PATCH)")
+        new_rating = st.text_input(
+            "Rating only (leave empty to skip)",
+            value="",
+            key="patch-rating",
+        )
+        submitted = st.form_submit_button("Patch series")
+        if submitted:
+            payload: dict[str, Any] = {}
+            if new_rating:
+                try:
+                    payload["rating"] = float(new_rating)
+                except ValueError:
+                    st.error("Rating must be a number between 0 and 10.")
+                    return
+                if not 0 <= payload["rating"] <= 10:
+                    st.error("Rating must be between 0 and 10.")
+                    return
+
+            if not payload:
+                st.error("Provide at least one field to patch.")
+                return
+
+            updated = patch_series(api_base, selected["id"], payload)
+            if updated:
+                st.success(f"Patched: {updated['title']} ({updated.get('rating', '—')})")
+                st.rerun()
+
+
 def main() -> None:
+    """Run the Streamlit UI."""
     st.set_page_config(page_title="TV Series Catalogue", page_icon="📺", layout="wide")
     inject_imdb_theme()
     st.markdown(
@@ -242,7 +389,7 @@ def main() -> None:
     st.sidebar.header("Connection")
     api_base = _clean_base_url(st.sidebar.text_input("API base URL", API_BASE_DEFAULT))
     st.sidebar.write(f"Active: {api_base}")
-    st.sidebar.info("API endpoints: GET/POST /series")
+    st.sidebar.info("API endpoints: GET/POST/PUT/PATCH/DELETE /series")
 
     st.markdown(
         "",
@@ -257,6 +404,7 @@ def main() -> None:
         render_table(series)
 
     render_create_form(api_base)
+    render_update_forms(api_base, series)
     render_delete_form(api_base, series)
 
 
