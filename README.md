@@ -1,4 +1,4 @@
-# FastAPI TV Series Catalogue (EX1)
+# FastAPI TV Series Catalogue
 
 Small FastAPI service for a TV series catalogue using SQLModel + SQLite. Includes Typer CLI helpers, CRUD API, and pytest coverage.
 
