@@ -5,8 +5,8 @@ services:
       - "8000:8000"
       - "8501:8501"
     volumes:
-      - ./series.db:/app/series.db
+      - ./data:/app/data
     environment:
-      DATABASE_URL: "sqlite:///./series.db"
+      DATABASE_URL: "sqlite:///./data/series.db"
       API_PORT: "8000"
       STREAMLIT_PORT: "8501"

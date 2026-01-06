@@ -103,6 +103,22 @@ def test_create_series_returns_existing_on_duplicate_payload(client: TestClient)
     assert second_body["title"] == payload["title"]
 
 
+def test_create_series_dedupes_on_identity_fields(client: TestClient):
+    first = {"title": "Breaking Bad", "creator": "Vince Gilligan", "year": 2008, "rating": 9.5}
+    second = {"title": "Breaking Bad", "creator": "Vince Gilligan", "year": 2008, "rating": 9.0}
+
+    first_resp = client.post("/series", json=first)
+    assert first_resp.status_code == 201
+    first_body = first_resp.json()
+
+    second_resp = client.post("/series", json=second)
+    assert second_resp.status_code == 201
+    second_body = second_resp.json()
+
+    assert first_body["id"] == second_body["id"]
+    assert second_body["rating"] == first["rating"]
+
+
 def test_create_series_rejects_empty_title(client: TestClient):
     payload = {"title": "", "creator": "Somebody", "year": 2022, "rating": 7.0}
     response = client.post("/series", json=payload)
@@ -113,3 +129,26 @@ def test_create_series_rejects_rating_out_of_range(client: TestClient):
     payload = {"title": "Show", "creator": "Author", "year": 2022, "rating": 11}
     response = client.post("/series", json=payload)
     assert response.status_code == 422
+
+
+def test_list_series_paginates_results(client: TestClient):
+    for idx in range(3):
+        payload = {
+            "title": f"Show {idx}",
+            "creator": "Creator",
+            "year": 2020 + idx,
+            "rating": 7.0 + idx,
+        }
+        assert client.post("/series", json=payload).status_code == 201
+
+    response = client.get("/series", params={"offset": 1, "limit": 1})
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["title"] == "Show 1"
+
+
+def test_health_check(client: TestClient):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

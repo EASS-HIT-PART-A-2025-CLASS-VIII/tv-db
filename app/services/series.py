@@ -5,9 +5,9 @@ from ..models import Series, SeriesCreate, SeriesDB, SeriesUpdate
 from .helpers import find_duplicate_series
 
 
-def list_series(session: Session) -> list[Series]:
-    """Return all series ordered by ID."""
-    rows = session.exec(select(SeriesDB).order_by(SeriesDB.id)).all()
+def list_series(session: Session, offset: int = 0, limit: int = 100) -> list[Series]:
+    """Return series ordered by ID with pagination."""
+    rows = session.exec(select(SeriesDB).order_by(SeriesDB.id).offset(offset).limit(limit)).all()
     return [Series.model_validate(row) for row in rows]
 
 
@@ -71,4 +71,3 @@ def delete_series(series_id: int, session: Session) -> None:
 
     session.delete(series)
     session.commit()
-    return None

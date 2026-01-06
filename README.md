@@ -13,13 +13,25 @@ uv venv .venv
 source .venv/bin/activate
 uv sync --all-groups
 ```
+If you hit uv cache permission issues in restricted environments, set:
+```bash
+export UV_CACHE_DIR="$(pwd)/.uv-cache"
+```
+
+## Makefile shortcuts
+```bash
+make run
+make test
+make lint
+make format
+```
 
 ## Run the API locally
 ```bash
 uv run uvicorn app.main:app --reload
 ```
 The lifespan handler initializes the SQLite database file on startup, so no manual migration step is needed for development.
-To override the database location, set `DATABASE_URL` (defaults to `sqlite:///./series.db`).
+To override the database location, set `DATABASE_URL` (defaults to `sqlite:///./series.db`). The database file is created on first run.
 The API exposes:
 - `GET /series` — list series
 - `POST /series` — create a series entry
@@ -44,7 +56,7 @@ What you get:
 If you run the API on another host or port, set `TV_API_BASE` accordingly.
 
 ## Typer CLI
-Initialize or seed the database (no `.db` files are checked in):
+Initialize or seed the database (no `.db` files are checked in; the file appears after the first run):
 ```bash
 uv run python -m app.cli init-db
 uv run python -m app.cli seed  # adds 3 sample TV series
@@ -54,17 +66,31 @@ uv run python -m app.cli seed  # adds 3 sample TV series
 ```bash
 uv run pytest
 ```
+Or via Make:
+```bash
+make test
+```
 
 ## Code style
 ```bash
 uv run ruff format .
 ```
+Lint:
+```bash
+uv run ruff check .
+```
+Or via Make:
+```bash
+make format
+make lint
+```
 
 ## Docker Compose
 ```bash
+mkdir -p data
 docker compose up --build
 ```
-The compose file maps `series.db` from your workspace into the container so data persists across restarts. The API listens on port 8000 and the Streamlit UI on port 8501. Override `API_PORT`, `STREAMLIT_PORT`, or `DATABASE_URL` via environment variables if needed. The container defaults `TV_API_BASE` to `http://127.0.0.1:${API_PORT}` unless you override it.
+The compose file maps `./data` into the container so data persists across restarts (`./data/series.db`). The API listens on port 8000 and the Streamlit UI on port 8501. Override `API_PORT`, `STREAMLIT_PORT`, or `DATABASE_URL` via environment variables if needed. The container defaults `TV_API_BASE` to `http://127.0.0.1:${API_PORT}` unless you override it.
 
 ## AI Assistance
 This project was developed with assistance from Codex for:

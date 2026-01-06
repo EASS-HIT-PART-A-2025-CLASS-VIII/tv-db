@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
 from ..db import get_session
@@ -12,9 +12,13 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 
 @router.get("", response_model=list[Series])
-def list_series(session: SessionDep) -> list[Series]:
+def list_series(
+    session: SessionDep,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+) -> list[Series]:
     """List all series entries."""
-    return service.list_series(session)
+    return service.list_series(session, offset=offset, limit=limit)
 
 
 @router.post("", response_model=Series, status_code=status.HTTP_201_CREATED)

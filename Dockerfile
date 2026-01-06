@@ -3,13 +3,8 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir \
-    fastapi==0.122.0 \
-    requests==2.32.5 \
-    sqlmodel==0.0.27 \
-    streamlit==1.52.2 \
-    uvicorn==0.38.0 \
-    typer==0.20.0
+RUN pip install --no-cache-dir uv \
+    && uv pip install --system -r pyproject.toml
 
 COPY app/ ./app/
 COPY scripts/start.sh ./scripts/start.sh

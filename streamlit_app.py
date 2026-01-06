@@ -1,4 +1,7 @@
+import csv
 import os
+from datetime import datetime
+from io import StringIO
 from typing import Any
 
 import requests
@@ -206,14 +209,13 @@ def render_table(series: list[dict[str, Any]]) -> None:
         column_order=["id", "title", "creator", "year", "rating"],
     )
 
-    csv_header = "id,title,creator,year,rating\n"
-    csv_rows = [
-        f"{row['id']},{row['title']},{row['creator']},{row['year']},{row.get('rating','')}"
-        for row in series
-    ]
+    csv_buffer = StringIO()
+    writer = csv.DictWriter(csv_buffer, fieldnames=["id", "title", "creator", "year", "rating"])
+    writer.writeheader()
+    writer.writerows(series)
     st.download_button(
         "Download CSV snapshot",
-        data=csv_header + "\n".join(csv_rows),
+        data=csv_buffer.getvalue(),
         file_name="series.csv",
         mime="text/csv",
     )
@@ -225,7 +227,13 @@ def render_create_form(api_base: str) -> None:
     with st.form("create-series", clear_on_submit=True):
         title = st.text_input("Title", placeholder="e.g., The Bear", max_chars=120)
         creator = st.text_input("Creator", placeholder="e.g., Christopher Storer", max_chars=120)
-        year = st.number_input("Year", min_value=1900, max_value=2100, value=2026, step=1)
+        year = st.number_input(
+            "Year",
+            min_value=1900,
+            max_value=2100,
+            value=datetime.now().year,
+            step=1,
+        )
         rating_raw = st.text_input("Rating (0-10, optional)", placeholder="8.6")
 
         submitted = st.form_submit_button("Save series")
@@ -262,7 +270,7 @@ def render_delete_form(api_base: str, series: list[dict[str, Any]]) -> None:
         return
 
     options = {row["id"]: row for row in series}
-    label = st.selectbox(
+    selected_id = st.selectbox(
         "Pick a series to delete",
         sorted(options.keys()),
         format_func=lambda series_id: (
@@ -271,8 +279,8 @@ def render_delete_form(api_base: str, series: list[dict[str, Any]]) -> None:
         key="delete-series",
     )
     if st.button("Delete selected", type="primary"):
-        if delete_series(api_base, label):
-            st.success(f"Deleted: #{label}")
+        if delete_series(api_base, selected_id):
+            st.success(f"Deleted: #{selected_id}")
             st.rerun()
 
 
@@ -284,7 +292,7 @@ def render_update_forms(api_base: str, series: list[dict[str, Any]]) -> None:
         return
 
     options = {row["id"]: row for row in series}
-    label = st.selectbox(
+    selected_id = st.selectbox(
         "Pick a series to edit",
         sorted(options.keys()),
         format_func=lambda series_id: (
@@ -292,7 +300,7 @@ def render_update_forms(api_base: str, series: list[dict[str, Any]]) -> None:
         ),
         key="edit-series",
     )
-    selected = options[label]
+    selected = options[selected_id]
     st.caption(f"Editing ID #{selected['id']}")
 
     with st.form("replace-series"):
@@ -386,10 +394,7 @@ def main() -> None:
         """,
         unsafe_allow_html=True,
     )
-    st.sidebar.header("Connection")
-    api_base = _clean_base_url(st.sidebar.text_input("API base URL", API_BASE_DEFAULT))
-    st.sidebar.write(f"Active: {api_base}")
-    st.sidebar.info("API endpoints: GET/POST/PUT/PATCH/DELETE /series")
+    api_base = _clean_base_url(API_BASE_DEFAULT)
 
     st.markdown(
         "",
