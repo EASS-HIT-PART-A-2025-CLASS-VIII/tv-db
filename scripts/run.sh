@@ -12,6 +12,8 @@ Commands:
   init        Create venv, sync deps, init DB, seed sample data
   back        Run FastAPI backend with reload
   front       Run Streamlit UI (set TV_API_BASE to override API URL)
+  refresh     Run async refresh script (Redis-backed idempotency)
+  demo        Run local demo walkthrough
   test-back   Run backend tests
   test-front  Run Streamlit tests (if tests_streamlit/ exists)
   test-all    Run backend + Streamlit tests
@@ -62,6 +64,16 @@ cmd_test_back() {
   uv run $(uv_active_flag) pytest tests/ -v
 }
 
+cmd_refresh() {
+  require_uv
+  uv run $(uv_active_flag) python scripts/refresh.py
+}
+
+cmd_demo() {
+  require_uv
+  uv run $(uv_active_flag) python -m app.demo
+}
+
 cmd_test_front() {
   require_uv
   if [ -d "tests_streamlit" ]; then
@@ -88,6 +100,8 @@ case "${1:-help}" in
   init) cmd_init ;;
   back) cmd_back ;;
   front) cmd_front ;;
+  refresh) cmd_refresh ;;
+  demo) cmd_demo ;;
   test-back) cmd_test_back ;;
   test-front) cmd_test_front ;;
   test-all) cmd_test_all ;;

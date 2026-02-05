@@ -16,9 +16,10 @@ def list_series(
     session: SessionDep,
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
+    query: str | None = Query(None, min_length=1, max_length=120),
 ) -> list[Series]:
     """List all series entries."""
-    return service.list_series(session, offset=offset, limit=limit)
+    return service.list_series(session, offset=offset, limit=limit, query=query)
 
 
 @router.post("", response_model=Series, status_code=status.HTTP_201_CREATED)
@@ -49,3 +50,9 @@ def patch_series(series_id: int, series: SeriesUpdate, session: SessionDep) -> S
 def delete_series(series_id: int, session: SessionDep) -> None:
     """Delete a series entry by ID."""
     return service.delete_series(series_id, session)
+
+
+@router.post("/{series_id}/refresh", response_model=Series)
+def refresh_series(series_id: int, session: SessionDep) -> Series:
+    """Refresh a series entry timestamp by ID."""
+    return service.refresh_series(series_id, session)

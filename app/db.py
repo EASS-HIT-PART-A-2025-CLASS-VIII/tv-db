@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from sqlmodel import SQLModel, Session, create_engine
+from sqlalchemy import text
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./series.db")
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
@@ -20,6 +21,8 @@ def create_db_and_tables() -> None:
     """Create database tables if they do not exist."""
     try:
         SQLModel.metadata.create_all(engine)
+        if DATABASE_URL.startswith("sqlite"):
+            _ensure_sqlite_column("seriesdb", "last_refreshed_at", "DATETIME")
     except Exception as exc:
         logger.exception("Database initialization failed.")
         raise RuntimeError(
@@ -31,6 +34,15 @@ def get_session() -> Iterator[Session]:
     """Yield a short-lived database session per call."""
     with Session(engine) as session:
         yield session
+
+
+def _ensure_sqlite_column(table: str, column: str, column_type: str) -> None:
+    """Add a column in SQLite if it is missing (simple local dev migration)."""
+    with engine.connect() as connection:
+        rows = connection.execute(text(f"PRAGMA table_info({table})")).fetchall()
+        columns = {row[1] for row in rows}
+        if column not in columns:
+            connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}"))
 
 
 @contextmanager

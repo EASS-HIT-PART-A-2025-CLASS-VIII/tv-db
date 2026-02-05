@@ -1,0 +1,54 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    environment:
+      DATABASE_URL: "sqlite:///./data/series.db"
+      REDIS_URL: "redis://redis:6379/0"
+      API_PORT: "8000"
+      STREAMLIT_PORT: "8501"
+      TV_API_BASE: "http://127.0.0.1:8000"
+      JWT_SECRET: "change-me"
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434/v1}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-ollama}
+    depends_on:
+      - redis
+      - ollama
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; print(requests.get('http://127.0.0.1:8000/health').status_code)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build: .
+    command: ["python", "-m", "app.worker"]
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      API_BASE_URL: "http://api:8000"
+      WORKER_USERNAME: "worker"
+      WORKER_PASSWORD: "worker-pass"
+      JWT_SECRET: "change-me"
+    depends_on:
+      - api
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  ollama:
