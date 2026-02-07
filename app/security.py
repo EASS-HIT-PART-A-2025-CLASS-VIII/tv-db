@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import re
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -35,6 +36,22 @@ def create_access_token(subject: str, role: str, expires_delta: timedelta | None
     )
     payload = {"sub": subject, "role": role, "exp": expire}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def password_strength_issues(password: str) -> list[str]:
+    """Return a list of unmet password requirements."""
+    issues: list[str] = []
+    if len(password) < 8:
+        issues.append("Password must be at least 8 characters long.")
+    if not re.search(r"[a-z]", password):
+        issues.append("Password must include a lowercase letter.")
+    if not re.search(r"[A-Z]", password):
+        issues.append("Password must include an uppercase letter.")
+    if not re.search(r"\d", password):
+        issues.append("Password must include a number.")
+    if not re.search(r"[^\w\s]", password):
+        issues.append("Password must include a symbol.")
+    return issues
 
 
 def _decode_token(token: str) -> TokenPayload:

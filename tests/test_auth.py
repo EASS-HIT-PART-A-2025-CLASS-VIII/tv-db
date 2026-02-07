@@ -45,15 +45,32 @@ def test_expired_token_rejected(client: TestClient):
 
 
 def test_register_creates_viewer(client: TestClient):
-    response = client.post("/auth/register", json={"username": "newbie", "password": "pass"})
+    response = client.post(
+        "/auth/register",
+        json={"username": "newbie", "password": "StrongPass1!", "password_confirm": "StrongPass1!"},
+    )
     assert response.status_code == 201
-    login = client.post("/auth/login", json={"username": "newbie", "password": "pass"})
+    login = client.post("/auth/login", json={"username": "newbie", "password": "StrongPass1!"})
     assert login.status_code == 200
     assert login.json()["access_token"]
 
 
 def test_register_rejects_duplicate(client: TestClient):
-    first = client.post("/auth/register", json={"username": "dup", "password": "pass"})
+    first = client.post(
+        "/auth/register",
+        json={"username": "dup", "password": "StrongPass1!", "password_confirm": "StrongPass1!"},
+    )
     assert first.status_code == 201
-    second = client.post("/auth/register", json={"username": "dup", "password": "pass"})
+    second = client.post(
+        "/auth/register",
+        json={"username": "dup", "password": "StrongPass1!", "password_confirm": "StrongPass1!"},
+    )
     assert second.status_code == 409
+
+
+def test_register_rejects_weak_password(client: TestClient):
+    response = client.post(
+        "/auth/register",
+        json={"username": "weak", "password": "weak", "password_confirm": "weak"},
+    )
+    assert response.status_code == 400

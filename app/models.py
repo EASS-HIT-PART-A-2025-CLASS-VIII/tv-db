@@ -62,6 +62,13 @@ class RegisterRequest(SQLModel):
 
     username: str
     password: str
+    password_confirm: str
+
+
+class SummaryRequest(SQLModel):
+    """Payload for requesting an AI summary."""
+
+    series_id: int | None = None
 
 
 class Token(SQLModel):

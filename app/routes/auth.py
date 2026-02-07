@@ -4,7 +4,7 @@ from sqlmodel import Session
 from ..config import ACCESS_TOKEN_EXPIRE_MINUTES
 from ..db import get_session
 from ..models import LoginRequest, RegisterRequest, Token
-from ..security import create_access_token, hash_password, verify_password
+from ..security import create_access_token, hash_password, password_strength_issues, verify_password
 from ..services.users import create_viewer, get_user_by_username
 
 router = APIRouter()
@@ -27,5 +27,13 @@ def login(payload: LoginRequest, session: Session = Depends(get_session)) -> Tok
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, session: Session = Depends(get_session)) -> dict[str, str]:
     """Register a new viewer account."""
+    if payload.password != payload.password_confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password confirmation does not match.",
+        )
+    issues = password_strength_issues(payload.password)
+    if issues:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=issues)
     create_viewer(session, payload.username, hash_password(payload.password))
     return {"status": "created"}

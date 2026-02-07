@@ -151,12 +151,16 @@ def login(api_base: str, username: str, password: str) -> dict[str, Any] | None:
     return response.json()
 
 
-def register(api_base: str, username: str, password: str) -> bool:
+def register(api_base: str, username: str, password: str, password_confirm: str) -> bool:
     """Register a new viewer account."""
     try:
         response = requests.post(
             f"{api_base}/auth/register",
-            json={"username": username, "password": password},
+            json={
+                "username": username,
+                "password": password,
+                "password_confirm": password_confirm,
+            },
             timeout=REQUEST_TIMEOUT,
         )
     except requests.RequestException as exc:
@@ -168,6 +172,22 @@ def register(api_base: str, username: str, password: str) -> bool:
         return False
 
     return True
+
+
+def password_strength_issues(password: str) -> list[str]:
+    """Return unmet password requirements."""
+    issues = []
+    if len(password) < 8:
+        issues.append("At least 8 characters")
+    if not any(char.islower() for char in password):
+        issues.append("At least 1 lowercase letter")
+    if not any(char.isupper() for char in password):
+        issues.append("At least 1 uppercase letter")
+    if not any(char.isdigit() for char in password):
+        issues.append("At least 1 number")
+    if not any(not char.isalnum() for char in password):
+        issues.append("At least 1 symbol")
+    return issues
 
 
 def fetch_metrics(api_base: str, token: str) -> dict[str, Any] | None:
@@ -189,12 +209,15 @@ def fetch_metrics(api_base: str, token: str) -> dict[str, Any] | None:
     return response.json()
 
 
-def fetch_ai_summary(api_base: str, token: str) -> dict[str, Any] | None:
+def fetch_ai_summary(
+    api_base: str, token: str, series_id: int | None = None
+) -> dict[str, Any] | None:
     """Request an AI summary from the API."""
     try:
         response = requests.post(
             f"{api_base}/ai/summary",
             headers={"Authorization": f"Bearer {token}"},
+            json={"series_id": series_id} if series_id is not None else None,
             timeout=REQUEST_TIMEOUT,
         )
     except requests.RequestException as exc:
@@ -507,11 +530,26 @@ def main() -> None:
                     type="password",
                     key="register-password",
                 )
+                reg_password_confirm = st.text_input(
+                    "Confirm password",
+                    type="password",
+                    key="register-password-confirm",
+                )
+                st.caption(
+                    "Password requirements: 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 symbol."
+                )
+                requirements = password_strength_issues(reg_password) if reg_password else []
+                if reg_password and requirements:
+                    st.error("Password missing: " + ", ".join(requirements))
                 if st.button("Create account"):
-                    if not reg_username or not reg_password:
-                        st.error("Username and password required.")
+                    if not reg_username or not reg_password or not reg_password_confirm:
+                        st.error("Username and both password fields are required.")
+                    elif reg_password != reg_password_confirm:
+                        st.error("Passwords do not match.")
+                    elif requirements:
+                        st.error("Password does not meet strength requirements.")
                     else:
-                        if register(api_base, reg_username, reg_password):
+                        if register(api_base, reg_username, reg_password, reg_password_confirm):
                             st.success("Account created. You can log in now.")
         else:
             st.caption(f"Signed in as {st.session_state['auth_user']}")
@@ -543,25 +581,50 @@ def main() -> None:
         render_table(series)
         if "cancel_ai" not in st.session_state:
             st.session_state["cancel_ai"] = False
+        if "show_ai" not in st.session_state:
+            st.session_state["show_ai"] = False
 
-        col_generate, col_cancel = st.columns([1, 1])
-        with col_cancel:
-            if st.button("Cancel AI request"):
-                st.session_state["cancel_ai"] = True
-                st.info("AI request cancelled. Click Generate to try again.")
+        if st.button("Open AI summary"):
+            st.session_state["show_ai"] = True
 
-        with col_generate:
-            if st.button("Generate AI summary", type="primary"):
-                st.session_state["cancel_ai"] = False
-                if st.session_state["cancel_ai"]:
-                    st.stop()
-                summary = fetch_ai_summary(api_base, st.session_state["auth_token"])
-                if summary:
-                    st.subheader("AI summary")
-                    st.write(summary.get("summary", ""))
-                    highlights = summary.get("highlights", [])
-                    if highlights:
-                        st.markdown("\n".join([f"- {item}" for item in highlights]))
+        with st.expander("AI Summary", expanded=st.session_state["show_ai"]):
+            summary_targets = {"Full catalog": None}
+            for row in series:
+                title = row.get("title", "Untitled")
+                series_id = row.get("id")
+                if series_id is not None:
+                    summary_targets[f"{title} (#{series_id})"] = series_id
+            selected_label = st.selectbox(
+                "Select series to summarize",
+                list(summary_targets.keys()),
+                disabled=not bool(series),
+                key="ai-summary-target",
+            )
+            selected_series_id = summary_targets.get(selected_label)
+
+            col_generate, col_cancel = st.columns([1, 1])
+            with col_cancel:
+                if st.button("Cancel AI request", key="ai-cancel"):
+                    st.session_state["cancel_ai"] = True
+                    st.info("AI request cancelled. Click Generate to try again.")
+
+            with col_generate:
+                if st.button("Generate AI summary", type="primary", key="ai-generate"):
+                    st.session_state["cancel_ai"] = False
+                    if st.session_state["cancel_ai"]:
+                        st.stop()
+                    with st.spinner("Generating AI summary..."):
+                        summary = fetch_ai_summary(
+                            api_base,
+                            st.session_state["auth_token"],
+                            series_id=selected_series_id,
+                        )
+                    if summary:
+                        st.subheader("AI summary")
+                        st.write(summary.get("summary", ""))
+                        highlights = summary.get("highlights", [])
+                        if highlights:
+                            st.markdown("\n".join([f"- {item}" for item in highlights]))
 
     render_create_form(api_base)
     render_update_forms(api_base, series)
