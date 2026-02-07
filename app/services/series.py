@@ -1,13 +1,30 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
+from sqlalchemy import func, or_
 from sqlmodel import Session, select
 
 from ..models import Series, SeriesCreate, SeriesDB, SeriesUpdate
 from .helpers import find_duplicate_series
 
 
-def list_series(session: Session, offset: int = 0, limit: int = 100) -> list[Series]:
-    """Return series ordered by ID with pagination."""
-    rows = session.exec(select(SeriesDB).order_by(SeriesDB.id).offset(offset).limit(limit)).all()
+def list_series(
+    session: Session,
+    offset: int = 0,
+    limit: int = 100,
+    query: str | None = None,
+) -> list[Series]:
+    """Return series ordered by ID with pagination and optional query."""
+    statement = select(SeriesDB)
+    if query and query.strip():
+        normalized = f"%{query.strip().lower()}%"
+        statement = statement.where(
+            or_(
+                func.lower(SeriesDB.title).like(normalized),
+                func.lower(SeriesDB.creator).like(normalized),
+            )
+        )
+    rows = session.exec(statement.order_by(SeriesDB.id).offset(offset).limit(limit)).all()
     return [Series.model_validate(row) for row in rows]
 
 
@@ -71,3 +88,15 @@ def delete_series(series_id: int, session: Session) -> None:
 
     session.delete(series)
     session.commit()
+
+
+def refresh_series(series_id: int, session: Session) -> Series:
+    """Mark a series entry as refreshed."""
+    series = session.get(SeriesDB, series_id)
+    if series is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Series not found")
+    series.last_refreshed_at = datetime.now(timezone.utc)
+    session.add(series)
+    session.commit()
+    session.refresh(series)
+    return Series.model_validate(series)

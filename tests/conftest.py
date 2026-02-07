@@ -8,20 +8,30 @@ from sqlalchemy.pool import StaticPool
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))
+    sys.path.insert(0, str(ROOT))
 
 
 @pytest.fixture()
-def client():
-    from app.db import get_session
-    from app.main import app
-
+def engine():
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
+    return engine
+
+
+@pytest.fixture()
+def session(engine):
+    with Session(engine) as session:
+        yield session
+
+
+@pytest.fixture()
+def client(engine):
+    from app.db import get_session
+    from app.main import app
 
     def get_session_override():
         with Session(engine) as session:

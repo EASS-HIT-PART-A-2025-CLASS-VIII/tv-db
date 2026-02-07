@@ -5,3 +5,4 @@ __pycache__/
 series.db
 .coverage
 .pytest_cache/
+.hypothesis/

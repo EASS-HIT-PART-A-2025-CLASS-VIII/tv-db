@@ -148,7 +148,39 @@ def test_list_series_paginates_results(client: TestClient):
     assert body[0]["title"] == "Show 1"
 
 
+def test_list_series_filters_by_query(client: TestClient):
+    client.post(
+        "/series",
+        json={"title": "The Bear", "creator": "Christopher Storer", "year": 2022, "rating": 8.6},
+    )
+    client.post(
+        "/series",
+        json={"title": "The Crown", "creator": "Peter Morgan", "year": 2016, "rating": 8.6},
+    )
+
+    response = client.get("/series", params={"query": "bear"})
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["title"] == "The Bear"
+
+
+def test_refresh_series_updates_timestamp(client: TestClient):
+    payload = {"title": "Silo", "creator": "Graham Yost", "year": 2023, "rating": 8.2}
+    created = client.post("/series", json=payload).json()
+    response = client.post(f"/series/{created['id']}/refresh")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["last_refreshed_at"]
+
+
 def test_health_check(client: TestClient):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_trace_id_header_present(client: TestClient):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert "X-Trace-Id" in response.headers
