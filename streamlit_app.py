@@ -332,6 +332,18 @@ def render_create_form(api_base: str) -> None:
     """Render the form for creating new series entries."""
     st.subheader("Add a new series")
     with st.form("create-series", clear_on_submit=True):
+        if 'create_form_msg' not in st.session_state:
+            st.session_state['create_form_msg'] = None
+
+        if st.session_state['create_form_msg']:
+            msg_type = st.session_state['create_form_msg']['type']
+            msg_text = st.session_state['create_form_msg']['text']
+            if msg_type == "error":
+                st.error(msg_text)
+            elif msg_type == "success":
+                st.success(msg_text)
+            st.session_state['create_form_msg'] = None # Clear message after display
+
         title = st.text_input("Title", placeholder="e.g., The Bear", max_chars=120)
         creator = st.text_input("Creator", placeholder="e.g., Christopher Storer", max_chars=120)
         year = st.number_input(
@@ -352,26 +364,37 @@ def render_create_form(api_base: str) -> None:
             try:
                 rating = float(rating_raw)
             except ValueError:
-                st.error("Rating must be a number between 0 and 10.")
+                st.session_state['create_form_msg'] = {'type': 'error', 'text': "Rating must be a number between 0 and 10."}
                 return
             if not 0 <= rating <= 10:
-                st.error("Rating must be between 0 and 10.")
+                st.session_state['create_form_msg'] = {'type': 'error', 'text': "Rating must be between 0 and 10."}
                 return
 
         if not title or not creator:
-            st.error("Title and creator are required.")
+            st.session_state['create_form_msg'] = {'type': 'error', 'text': "Title and creator are required."}
             return
 
         payload = {"title": title, "creator": creator, "year": int(year), "rating": rating}
         created = create_series(api_base, payload)
         if created:
-            st.success(f"Saved: {created['title']} ({created['year']})")
+            st.session_state['create_form_msg'] = {'type': 'success', 'text': f"Saved: {created['title']} ({created['year']})"}
             st.rerun()
 
 
 def render_delete_form(api_base: str, series: list[dict[str, Any]]) -> None:
     """Render a delete control for existing entries."""
     st.subheader("Delete an entry")
+
+    if 'delete_form_msg' not in st.session_state:
+        st.session_state['delete_form_msg'] = None
+
+    if st.session_state['delete_form_msg']:
+        msg_type = st.session_state['delete_form_msg']['type']
+        msg_text = st.session_state['delete_form_msg']['text']
+        if msg_type == "success":
+            st.success(msg_text)
+        st.session_state['delete_form_msg'] = None # Clear message after display
+
     if not series:
         st.caption("No entries to delete yet.")
         return
@@ -387,7 +410,7 @@ def render_delete_form(api_base: str, series: list[dict[str, Any]]) -> None:
     )
     if st.button("Delete selected", type="primary"):
         if delete_series(api_base, selected_id):
-            st.success(f"Deleted: #{selected_id}")
+            st.session_state['delete_form_msg'] = {'type': 'success', 'text': f"Deleted: #{selected_id}"}
             st.rerun()
 
 
@@ -411,6 +434,18 @@ def render_update_forms(api_base: str, series: list[dict[str, Any]]) -> None:
     st.caption(f"Editing ID #{selected['id']}")
 
     with st.form("replace-series"):
+        if 'put_form_msg' not in st.session_state:
+            st.session_state['put_form_msg'] = None
+
+        if st.session_state['put_form_msg']:
+            msg_type = st.session_state['put_form_msg']['type']
+            msg_text = st.session_state['put_form_msg']['text']
+            if msg_type == "error":
+                st.error(msg_text)
+            elif msg_type == "success":
+                st.success(msg_text)
+            st.session_state['put_form_msg'] = None # Clear message after display
+
         st.markdown("Replace (PUT)")
         title = st.text_input("Title", value=selected["title"], max_chars=120, key="put-title")
         creator = st.text_input(
@@ -439,23 +474,35 @@ def render_update_forms(api_base: str, series: list[dict[str, Any]]) -> None:
                 try:
                     rating = float(rating_raw)
                 except ValueError:
-                    st.error("Rating must be a number between 0 and 10.")
+                    st.session_state['put_form_msg'] = {'type': 'error', 'text': "Rating must be a number between 0 and 10."}
                     return
                 if not 0 <= rating <= 10:
-                    st.error("Rating must be between 0 and 10.")
+                    st.session_state['put_form_msg'] = {'type': 'error', 'text': "Rating must be between 0 and 10."}
                     return
 
             if not title or not creator:
-                st.error("Title and creator are required.")
+                st.session_state['put_form_msg'] = {'type': 'error', 'text': "Title and creator are required."}
                 return
 
             payload = {"title": title, "creator": creator, "year": int(year), "rating": rating}
             updated = update_series(api_base, selected["id"], payload)
             if updated:
-                st.success(f"Updated: {updated['title']} ({updated['year']})")
+                st.session_state['put_form_msg'] = {'type': 'success', 'text': f"Updated: {updated['title']} ({updated['year']})"}
                 st.rerun()
 
     with st.form("patch-series"):
+        if 'patch_form_msg' not in st.session_state:
+            st.session_state['patch_form_msg'] = None
+
+        if st.session_state['patch_form_msg']:
+            msg_type = st.session_state['patch_form_msg']['type']
+            msg_text = st.session_state['patch_form_msg']['text']
+            if msg_type == "error":
+                st.error(msg_text)
+            elif msg_type == "success":
+                st.success(msg_text)
+            st.session_state['patch_form_msg'] = None # Clear message after display
+
         st.markdown("Patch (PATCH)")
         new_rating = st.text_input(
             "Rating only (leave empty to skip)",
@@ -469,19 +516,19 @@ def render_update_forms(api_base: str, series: list[dict[str, Any]]) -> None:
                 try:
                     payload["rating"] = float(new_rating)
                 except ValueError:
-                    st.error("Rating must be a number between 0 and 10.")
+                    st.session_state['patch_form_msg'] = {'type': 'error', 'text': "Rating must be a number between 0 and 10."}
                     return
                 if not 0 <= payload["rating"] <= 10:
-                    st.error("Rating must be between 0 and 10.")
+                    st.session_state['patch_form_msg'] = {'type': 'error', 'text': "Rating must be between 0 and 10."}
                     return
 
             if not payload:
-                st.error("Provide at least one field to patch.")
+                st.session_state['patch_form_msg'] = {'type': 'error', 'text': "Provide at least one field to patch."}
                 return
 
             updated = patch_series(api_base, selected["id"], payload)
             if updated:
-                st.success(f"Patched: {updated['title']} ({updated.get('rating', '—')})")
+                st.session_state['patch_form_msg'] = {'type': 'success', 'text': f"Patched: {updated['title']} ({updated.get('rating', '—')})"}
                 st.rerun()
 
 
@@ -511,19 +558,43 @@ def main() -> None:
             st.session_state["auth_user"] = ""
 
         if not st.session_state["auth_token"]:
+            if 'login_msg' not in st.session_state:
+                st.session_state['login_msg'] = None
+
+            if st.session_state['login_msg']:
+                msg_type = st.session_state['login_msg']['type']
+                msg_text = st.session_state['login_msg']['text']
+                if msg_type == "error":
+                    st.error(msg_text)
+                elif msg_type == "success":
+                    st.success(msg_text)
+                st.session_state['login_msg'] = None # Clear message after display
+
             username = st.text_input("Username", key="login-username")
             password = st.text_input("Password", type="password", key="login-password")
             if st.button("Login", type="primary"):
                 if not username or not password:
-                    st.error("Username and password required.")
+                    st.session_state['login_msg'] = {'type': 'error', 'text': "Username and password required."}
                 else:
                     token_payload = login(api_base, username, password)
                     if token_payload and token_payload.get("access_token"):
                         st.session_state["auth_token"] = token_payload["access_token"]
                         st.session_state["auth_user"] = username
-                        st.success(f"Signed in as {username}")
+                        st.session_state['login_msg'] = {'type': 'success', 'text': f"Signed in as {username}"}
                         st.rerun()
             with st.expander("Register new viewer"):
+                if 'register_msg' not in st.session_state:
+                    st.session_state['register_msg'] = None
+
+                if st.session_state['register_msg']:
+                    msg_type = st.session_state['register_msg']['type']
+                    msg_text = st.session_state['register_msg']['text']
+                    if msg_type == "error":
+                        st.error(msg_text)
+                    elif msg_type == "success":
+                        st.success(msg_text)
+                    st.session_state['register_msg'] = None # Clear message after display
+
                 reg_username = st.text_input("New username", key="register-username")
                 reg_password = st.text_input(
                     "New password",
@@ -540,17 +611,21 @@ def main() -> None:
                 )
                 requirements = password_strength_issues(reg_password) if reg_password else []
                 if reg_password and requirements:
-                    st.error("Password missing: " + ", ".join(requirements))
+                    st.session_state['register_msg'] = {'type': 'error', 'text': "Password missing: " + ", ".join(requirements)}
                 if st.button("Create account"):
                     if not reg_username or not reg_password or not reg_password_confirm:
-                        st.error("Username and both password fields are required.")
+                        st.session_state['register_msg'] = {'type': 'error', 'text': "Username and both password fields are required."}
+                        st.rerun()
                     elif reg_password != reg_password_confirm:
-                        st.error("Passwords do not match.")
+                        st.session_state['register_msg'] = {'type': 'error', 'text': "Passwords do not match."}
+                        st.rerun()
                     elif requirements:
-                        st.error("Password does not meet strength requirements.")
+                        st.session_state['register_msg'] = {'type': 'error', 'text': "Password does not meet strength requirements."}
+                        st.rerun()
                     else:
                         if register(api_base, reg_username, reg_password, reg_password_confirm):
-                            st.success("Account created. You can log in now.")
+                            st.session_state['register_msg'] = {'type': 'success', 'text': "Account created. You can log in now."}
+                            st.rerun()
         else:
             st.caption(f"Signed in as {st.session_state['auth_user']}")
             if st.button("Logout"):
@@ -588,6 +663,16 @@ def main() -> None:
             st.session_state["show_ai"] = True
 
         with st.expander("AI Summary", expanded=st.session_state["show_ai"]):
+            if 'ai_cancel_msg' not in st.session_state:
+                st.session_state['ai_cancel_msg'] = None
+
+            if st.session_state['ai_cancel_msg']:
+                msg_type = st.session_state['ai_cancel_msg']['type']
+                msg_text = st.session_state['ai_cancel_msg']['text']
+                if msg_type == "info":
+                    st.info(msg_text)
+                st.session_state['ai_cancel_msg'] = None # Clear message after display
+
             summary_targets = {"Full catalog": None}
             for row in series:
                 title = row.get("title", "Untitled")
@@ -606,7 +691,7 @@ def main() -> None:
             with col_cancel:
                 if st.button("Cancel AI request", key="ai-cancel"):
                     st.session_state["cancel_ai"] = True
-                    st.info("AI request cancelled. Click Generate to try again.")
+                    st.session_state['ai_cancel_msg'] = {'type': 'info', 'text': "AI request cancelled. Click Generate to try again."}
 
             with col_generate:
                 if st.button("Generate AI summary", type="primary", key="ai-generate"):
